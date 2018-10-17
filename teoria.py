@@ -1,6 +1,7 @@
 import os
 import sys
 
+#Verifica se a entrada é válida, verificando se cada letra da entrada está no alfabeto
 def entrada_valida(enter, alfabeto):
 	for word in enter:
 		exists = False
@@ -11,6 +12,7 @@ def entrada_valida(enter, alfabeto):
 			print('Entrada inválida, encerrando aplicação.')
 			exit()
 
+#Função auxiliar para tirar as transições do formato (1,0,B,B) e deixar no formato "1 0 B B" para comparar com o alfabeto da fita
 def structure_list(var, list):
 	organized_list = ''
 	cont=0
@@ -21,11 +23,14 @@ def structure_list(var, list):
 		cont=cont+1
 	entrada_valida(organized_list, list)
 
+#Confere se o alfabeto da fita está contido nas transições e não é nenhum simbolo inválido em ambas
 def verifica_transicao(alfabeto, transicao):
 	alfabeto = alfabeto + " D" + " E" + " /"
 	for x in transicao:
 		structure_list(x, alfabeto)
 
+#Classe Fita, contém construtor, read_fita(retorna a fita), write_fita(marca símbolos como lidos),
+#move_left e move_right e write_history(grava o histórico de estados na fita 2)
 class Fita(object):
 	def __init__(self, entrada):
 		self.fita = entrada + "B"
@@ -40,31 +45,36 @@ class Fita(object):
 	def move_left(self):
 		if self.head == 0:
 			return
+		#Se a cabeça da fita for igual ao tamanho da fita -1, ou o cabeça da fita for símbolo branco, diminuir a fita
 		if self.head == len(self.fita)-1 or self.fita[self.head] == "B":
 			self.fita = self.fita[:self.head-1] + "B"
 		self.head = self.head - 1
 
+	#Aumenta a fita em um, se a cabeça da fita é igual ao tamanho da fita, a fita é aumentada com um "B"
 	def move_right(self):
 		self.head = self.head + 1
 		if self.head == len(self.fita):
 			self.fita = self.fita + "B"
 
+	#Serve para esrever os estados percorridos pela MT, adiciona ele entre os já existentes e o símbolo branco no fim da fita.
+	#Move a fita logo na sequência, para esquerda ou direita, dependendo dos símbolos. passados no parâmetro dir 
 	def write_history(self, aux, dir):
 		if dir == "x" or dir == "D":
 			self.fita = self.fita[:self.head] + aux + self.fita[self.head + 1:]
 		if dir == "D" or dir == "x":
 			self.move_right()
-		if dir == "E" or dir == "0":
+		if dir == "E" or dir != "x":
 			self.move_left()
 
+#Classe da Maquina, constrói ela e suas fitas.
 class Maquina_Turing(object):
 	def __init__(self, entrada):
 		self.fita1 = Fita(entrada)
 		self.fita2 = Fita("")
 		self.fita3 = Fita("")
 
+#Função para a reversão das transições da máquina. Retorna a nova lista de transições (realiza uma por uma)
 def MT_revert(newState, _f1, _f2, _f3, oldState, f1, f2, f3):
-
 	if f1 == "/" and _f1 == "D":
 		_f1 = f1
 		f1 = "E"
@@ -87,6 +97,7 @@ def MT_revert(newState, _f1, _f2, _f3, oldState, f1, f2, f3):
 	transitions = "(" + newState + "," + _f1 + "," + _f2 + "," + _f3 + ")=(" + oldState + "," + f1 + "," + f2 + "," + f3 + ")"
 	return transitions
 
+#Controle dos Estados. Confere qual o modo atual do automato (Move or Read/Write, RW), e realize as ações cabíveis. Todos os estados atualizam a fita 2
 def control(str1, oldState, fita, mode, str2, maquina):
 	if mode == "Move":
 		#print('Movimento na fita', fita)
@@ -112,6 +123,7 @@ def control(str1, oldState, fita, mode, str2, maquina):
 		maquina.fita1.write_fita(str2)
 		maquina.fita2.write_history(oldState, str2)
 
+#Realiza as transições da máquina. confere se o símbolo de caminho (f1) é '/', o que indica movimentação, ou é verificador de palavra (ou branco)
 def transitions_MT(var, maquina, transitions_revert, palavra, passo):
 	oldState = var[1]
 	f1 = var[3]
@@ -129,6 +141,7 @@ def transitions_MT(var, maquina, transitions_revert, palavra, passo):
 		passo-=1
 
 	if f1 != "/":
+		#Validador de palavra. Caso a palavra não tenha uma transição que a válide, encerra o programa.
 		for x in palavra:
 			if cont == passo:
 				break
@@ -141,6 +154,7 @@ def transitions_MT(var, maquina, transitions_revert, palavra, passo):
 
 		control(f1, oldState, 1, "RW", _f1, maquina)
 
+	#Cria a lista definitiva das transições reversas a atual
 	transitions_revert.append(MT_revert(newState,_f1,_f2,_f3,oldState,f1,f2,f3))
 
 def main(args):
@@ -188,7 +202,9 @@ def main(args):
 		cont+=1
 		transitions_MT(x, maquina, transitions_revert, enter_fita, cont)
 
+	#Poe a lista de transições na ordem certa
 	transitions_revert.reverse()
+	#Esvazia a antiga lista de transições
 	transitions = list()
 
 	print('Primeiro passo da MT Reversível:')
@@ -216,7 +232,5 @@ def main(args):
 	print('Estado atual da Fita 2: ',maquina.fita2.fita)
 	print('Estado atual da Fita 3: ',maquina.fita3.fita)
 	print('______________________________________')
-
-	#Salvar a nova entrada na fita 3
 
 if __name__ == "__main__": sys.exit(main(sys.argv))
