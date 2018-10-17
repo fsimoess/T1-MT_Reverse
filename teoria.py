@@ -112,7 +112,7 @@ def control(str1, oldState, fita, mode, str2, maquina):
 		maquina.fita1.write_fita(str2)
 		maquina.fita2.write_history(oldState, str2)
 
-def transitions_MT(var, maquina, transitions_revert, palavra):
+def transitions_MT(var, maquina, transitions_revert, palavra, passo):
 	oldState = var[1]
 	f1 = var[3]
 	f2 = var[5]
@@ -121,10 +121,24 @@ def transitions_MT(var, maquina, transitions_revert, palavra):
 	_f1 = var[13]
 	_f2 = var[15]
 	_f3 = var[17]
+	aux = False
+	cont = 0
 
 	if f1 == "/":
 		control(f1, oldState, 1, "Move", _f1, maquina)
+		passo-=1
+
 	if f1 != "/":
+		for x in palavra:
+			if cont == passo:
+				break
+			if x == f1:
+				aux = True
+			elif x != "B":
+				print("Automato em looping! Não existe parte da palavra na transição", var)
+				print("Saindo do programa!")
+				exit()
+
 		control(f1, oldState, 1, "RW", _f1, maquina)
 
 	transitions_revert.append(MT_revert(newState,_f1,_f2,_f3,oldState,f1,f2,f3))
@@ -169,9 +183,10 @@ def main(args):
 	print('Estado inicial da Fita 3: ',maquina.fita3.fita)
 	print('______________________________________')
 
+	cont=0
 	for x in transitions:
-		print(x)
-		transitions_MT(x, maquina, transitions_revert, enter_fita)
+		cont+=1
+		transitions_MT(x, maquina, transitions_revert, enter_fita, cont)
 
 	transitions_revert.reverse()
 	transitions = list()
@@ -191,9 +206,10 @@ def main(args):
 	print('Estado atual da Fita 3: ',maquina.fita3.fita)
 	print('______________________________________')
 
+	cont=0
 	for x in transitions_revert:
-		print(x)
-		transitions_MT(x, maquina, transitions, exit_fita)
+		cont+=1
+		transitions_MT(x, maquina, transitions, exit_fita, cont)
 
 	print('Reversão da saída, terceiro passo da MT Reversível:')
 	print('Estado atual da Fita 1: ',maquina.fita1.fita)
